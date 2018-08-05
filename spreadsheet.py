@@ -38,6 +38,11 @@ class Workbook(object):
 
     def _scrub_phone(self, ph_num):
         return ph_num.replace('(', '').replace(')', '').replace(' ', '').replace('-', '')
+    
+    def get_not_enrolled(self) -> list:
+        members = self.get_name_phone_dues()
+        not_enrolled = [member for member in members if member.ph_num == '']
+        return not_enrolled
 
     def get_name_phone_dues(self):
         """ Find all names, phone numbers, and current amount due
@@ -78,7 +83,36 @@ class Workbook(object):
 
         return people
 
-    def add_phone(self, person: Person):
+    def add_phone(self, person: Person) -> bool:
         # enroll a user for alerts by adding their phone number
         # to the spreadsheet
-        pass
+        # return True on success, False otherwise
+        
+        # TODO add a check for EID or something to ensure they are who they say they are
+        
+        dues_members_sheet = self.get_sheet('Dues - Members')
+        if not dues_members_sheet:
+            return False
+        
+        name_cell = dues_members_sheet.find(person.name)
+        if not name_cell:
+            return False
+        
+        # TODO do a check to see if they're already enrolled?
+        dues_members_sheet.update_cell(name_cell._row, name_cell._col + 1, person.ph_num)
+
+        return True
+    
+    def remove_phone(self, person: Person) -> bool:
+        # delete a user's phone number from the spreadsheet
+        # essentially uninroll them in alerts
+        dues_members_sheet = self.get_sheet('Dues - Members')
+        if not dues_members_sheet:
+            return False
+        
+        name_cell = dues_members_sheet.find(person.name)
+        if not name_cell:
+            return False
+        
+        dues_members_sheet.update_cell(name_cell._row, name_cell._col + 1, '')
+        return True    
